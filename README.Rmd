@@ -66,8 +66,11 @@ get_empirical_partial_utilities(shap_scores_long)
 ```
 
 ```{r model_weights}
-get_model_weights(shap_scores_long,regularisation=1) %>% head()
+weights <- get_model_weights(shap_scores_long,regularisation=1)
 ```
+Pairs plot
+```{r pairs,message=F}
+library(GGally)
+weights[,-1] %>% ggpairs() + theme_minimal()
 
 
-In that case, don't forget to commit and push the resulting figure files, so they display on GitHub and CRAN.

@@ -73,33 +73,30 @@ get_empirical_partial_utilities(shap_scores_long)
 #> # Groups:   question_code [3]
 #>    question_code response_code du_average
 #>    <chr>                 <dbl>      <dbl>
-#>  1 q13                       1    0.00378
-#>  2 q13                       2    0.00380
-#>  3 q13                       3    0.00370
-#>  4 q13                       4    0.00399
-#>  5 q13                       5    0.00756
-#>  6 q13                       6    0.00725
-#>  7 q52                       1    0.00542
-#>  8 q52                       2    0.00320
-#>  9 q52                       3    0.0126 
-#> 10 q52                       4    0.0150 
-#> 11 theta                    NA   -0.0924
+#>  1 q13                       1    0.00352
+#>  2 q13                       2    0.00329
+#>  3 q13                       3    0.00281
+#>  4 q13                       4    0.00328
+#>  5 q13                       5    0.00617
+#>  6 q13                       6    0.00638
+#>  7 q52                       1    0.00550
+#>  8 q52                       2    0.00351
+#>  9 q52                       3    0.0123 
+#> 10 q52                       4    0.0138 
+#> 11 theta                    NA   -0.0913
 ```
 
 ``` r
-get_model_weights(shap_scores_long,regularisation=1) %>% head()
+weights <- get_model_weights(shap_scores_long,regularisation=1)
 #> Joining with `by = join_by(question_code)`
 #> Joining with `by = join_by(question_code, response_code)`
-#> # A tibble: 6 × 4
-#>      ID w_q52 w_q13 w_theta
-#>   <int> <dbl> <dbl>   <dbl>
-#> 1     1 0.735 0.781   0.849
-#> 2     2 1.00  1.29    0.825
-#> 3     3 0.878 0.943   0.655
-#> 4     4 1.19  1.33    0.842
-#> 5     5 0.870 1.12    0.651
-#> 6     6 1.06  1.35    0.920
 ```
 
-In that case, don’t forget to commit and push the resulting figure
-files, so they display on GitHub and CRAN.
+Pairs plot
+
+``` r
+library(GGally)
+weights[,-1] %>% ggpairs() + theme_minimal()
+```
+
+<img src="man/figures/README-pairs-1.png" width="100%" />
