@@ -1,0 +1,73 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# hpcalibrater
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+hpcalibrater creates a micro-calibrated ABM model for heat pump uptake by Irish households.
+
+## Installation
+
+You can install the development version of hpcalibrater like so:
+
+``` r
+# install_github()
+```
+
+## Example
+
+Survey data for 804 owner-occupiers with 39 features plus HH ID and stated likelihood-to-adopt. 
+
+```{r example, message=FALSE}
+library(hpcalibrater)
+library(tidyverse)
+## basic example code
+hp_survey_oo %>% dim()
+```
+
+Survey questions and answers are in:
+```{r qanda,message=FALSE}
+hp_questions %>% head()
+```
+
+
+Futher feature selection before passing to xgboost for model micro-calibration
+```{r help}
+## basic example code
+feature_select(hp_survey_oo) %>% dim()
+```
+
+Run GBM
+
+```{r bst, results='hide', message=FALSE}
+bst <- get_boosted_tree_model(transform_to_utils(feature_select(hp_survey_oo,recode_bills=T,n_bill=5),epsilon=0.7))
+shap_scores_long <- get_shap_scores(transform_to_utils(feature_select(hp_survey_oo,recode_bills=T,n_bill=5),epsilon=0.7),bst)
+
+```
+
+Extract partial utilities from shap_scores_long based on financial feature (heating bills), social feature ()
+
+```{r mode_utils}
+get_empirical_partial_utilities(shap_scores_long)
+```
+
+```{r model_weights}
+get_model_weights(shap_scores_long,regularisation=1) %>% head()
+```
+
+
+In that case, don't forget to commit and push the resulting figure files, so they display on GitHub and CRAN.
