@@ -51,7 +51,9 @@ Futher feature selection before passing to xgboost for model micro-calibration
 feature_select(hp_survey_oo) %>% dim()
 ```
 
-Run GBM
+### Run GBM
+
+The function `hpcalibrater::get_boosted_tree_model` generated a boosted tree object using XGBoost. SHAP scores are extracted from this object using `hpcalibrater::get_shap_scores`.
 
 ```{r bst, results='hide', message=FALSE}
 bst <- get_boosted_tree_model(transform_to_utils(feature_select(hp_survey_oo,recode_bills=T,n_bill=5),epsilon=0.7))
@@ -59,7 +61,9 @@ shap_scores_long <- get_shap_scores(transform_to_utils(feature_select(hp_survey_
 
 ```
 
-Extract partial utilities from shap_scores_long based on financial feature (heating bills), social feature ()
+### Micro-calibrated ABM
+
+Partial utilities from `shap_scores_long` based on financial feature (heating bills, **q13**), social feature (**q52**)
 
 ```{r mode_utils}
 get_empirical_partial_utilities(shap_scores_long)
@@ -68,9 +72,10 @@ get_empirical_partial_utilities(shap_scores_long)
 ```{r model_weights}
 weights <- get_model_weights(shap_scores_long,regularisation=1)
 ```
-Pairs plot
+### Pairs plot
 ```{r pairs,message=F}
 library(GGally)
 weights[,-1] %>% ggpairs() + theme_minimal()
-
+```
+Note that there is a significant skew in the barrier weights ($\theta$)
 

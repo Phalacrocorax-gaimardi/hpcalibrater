@@ -55,15 +55,21 @@ feature_select(hp_survey_oo) %>% dim()
 #> [1] 804  32
 ```
 
-Run GBM
+### Run GBM
+
+The function `hpcalibrater::get_boosted_tree_model` generated a boosted
+tree object using XGBoost. SHAP scores are extracted from this object
+using `hpcalibrater::get_shap_scores`.
 
 ``` r
 bst <- get_boosted_tree_model(transform_to_utils(feature_select(hp_survey_oo,recode_bills=T,n_bill=5),epsilon=0.7))
 shap_scores_long <- get_shap_scores(transform_to_utils(feature_select(hp_survey_oo,recode_bills=T,n_bill=5),epsilon=0.7),bst)
 ```
 
-Extract partial utilities from shap_scores_long based on financial
-feature (heating bills), social feature ()
+### Micro-calibrated ABM
+
+Partial utilities from `shap_scores_long` based on financial feature
+(heating bills, **q13**), social feature (**q52**)
 
 ``` r
 get_empirical_partial_utilities(shap_scores_long)
@@ -73,17 +79,17 @@ get_empirical_partial_utilities(shap_scores_long)
 #> # Groups:   question_code [3]
 #>    question_code response_code du_average
 #>    <chr>                 <dbl>      <dbl>
-#>  1 q13                       1    0.00352
-#>  2 q13                       2    0.00329
-#>  3 q13                       3    0.00281
-#>  4 q13                       4    0.00328
-#>  5 q13                       5    0.00617
-#>  6 q13                       6    0.00638
-#>  7 q52                       1    0.00550
-#>  8 q52                       2    0.00351
-#>  9 q52                       3    0.0123 
-#> 10 q52                       4    0.0138 
-#> 11 theta                    NA   -0.0913
+#>  1 q13                       1    0.00364
+#>  2 q13                       2    0.00394
+#>  3 q13                       3    0.00345
+#>  4 q13                       4    0.00414
+#>  5 q13                       5    0.00676
+#>  6 q13                       6    0.00702
+#>  7 q52                       1    0.00669
+#>  8 q52                       2    0.00452
+#>  9 q52                       3    0.0131 
+#> 10 q52                       4    0.0158 
+#> 11 theta                    NA   -0.0933
 ```
 
 ``` r
@@ -92,11 +98,12 @@ weights <- get_model_weights(shap_scores_long,regularisation=1)
 #> Joining with `by = join_by(question_code, response_code)`
 ```
 
-Pairs plot
+### Pairs plot
 
 ``` r
 library(GGally)
 weights[,-1] %>% ggpairs() + theme_minimal()
 ```
 
-<img src="man/figures/README-pairs-1.png" width="100%" />
+<img src="man/figures/README-pairs-1.png" width="100%" /> Note that
+there is a significant skew in the barrier weights ($`\theta`$)
