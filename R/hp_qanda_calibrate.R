@@ -1,4 +1,4 @@
-#' @title hp_qanda
+#' @title hp_qanda_calibrate
 #' @description a table of response options for each hp_survey question
 #' @format A data frame with 256 rows and 4 variables:
 #' \describe{
@@ -8,4 +8,4 @@
 #'   \item{\code{response_code}}{double response code}
 #'}
 #' @details 2024 Li et al
-"hp_qanda"
+"hp_qanda_calibrate"

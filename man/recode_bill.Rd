@@ -15,5 +15,5 @@ recode_bill(hp_data_in, n_bill)
 a new survey dataframe with annual bills range 1~ < 900, 2~900-1350, 3~1350 to 1650, 4~1650-2100,5~> 2100
 }
 \description{
-converts to annual bill feature (q_ab), dropping min and max bills (q14 & q15)
+reduces the number of heating bill categories
 }

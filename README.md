@@ -27,32 +27,32 @@ stated likelihood-to-adopt.
 library(hpcalibrater)
 library(tidyverse)
 ## basic example code
-hp_survey_oo %>% dim()
-#> [1] 804  41
+hp_survey_oo_calibrate %>% dim()
+#> [1] 861  37
 ```
 
 Survey questions and answers are in:
 
 ``` r
-hp_questions %>% head()
+hp_questions_calibrate %>% head()
 #> # A tibble: 6 × 2
-#>   question        question_code
-#>   <chr>           <chr>        
-#> 1 Gender          qa           
-#> 2 Age             qb           
-#> 3 Region          qc2          
-#> 4 Social Grade    qd           
-#> 5 Work status     qe           
-#> 6 Education level qf
+#>   question_code question       
+#>   <chr>         <chr>          
+#> 1 serial        Serial         
+#> 2 qa            Gender         
+#> 3 qb            Age            
+#> 4 qc2           Region         
+#> 5 qe            Work status    
+#> 6 qf            Education level
 ```
 
-Futher feature selection before passing to xgboost for model
-micro-calibration
+The dataset hp_survey_oo Further feature selection before passing to
+xgboost for model micro-calibration
 
 ``` r
 ## basic example code
-feature_select(hp_survey_oo) %>% dim()
-#> [1] 804  32
+feature_select(hp_survey_oo_calibrate) %>% dim()
+#> [1] 861  37
 ```
 
 ### Run GBM
@@ -62,8 +62,8 @@ tree object using XGBoost. SHAP scores are extracted from this object
 using `hpcalibrater::get_shap_scores`.
 
 ``` r
-bst <- get_boosted_tree_model(transform_to_utils(feature_select(hp_survey_oo,recode_bills=T,n_bill=5),epsilon=0.7))
-shap_scores_long <- get_shap_scores(transform_to_utils(feature_select(hp_survey_oo,recode_bills=T,n_bill=5),epsilon=0.7),bst)
+bst <- get_boosted_tree_model(transform_to_utils(feature_select(hp_survey_oo_calibrate,recode_bills=T,n_bill=5),epsilon=0.7))
+shap_scores_long <- get_shap_scores(transform_to_utils(feature_select(hp_survey_oo_calibrate,recode_bills=T,n_bill=5),epsilon=0.7),bst)
 ```
 
 ### Micro-calibrated ABM
@@ -79,17 +79,17 @@ get_empirical_partial_utilities(shap_scores_long)
 #> # Groups:   question_code [3]
 #>    question_code response_code du_average
 #>    <chr>                 <dbl>      <dbl>
-#>  1 q13                       1    0.00364
-#>  2 q13                       2    0.00394
-#>  3 q13                       3    0.00345
-#>  4 q13                       4    0.00414
-#>  5 q13                       5    0.00676
-#>  6 q13                       6    0.00702
-#>  7 q52                       1    0.00669
-#>  8 q52                       2    0.00452
-#>  9 q52                       3    0.0131 
-#> 10 q52                       4    0.0158 
-#> 11 theta                    NA   -0.0933
+#>  1 q13                       1    0.00565
+#>  2 q13                       2    0.00657
+#>  3 q13                       3    0.00755
+#>  4 q13                       4    0.00799
+#>  5 q13                       5    0.0116 
+#>  6 q13                       6    0.0117 
+#>  7 q52                       1    0.00345
+#>  8 q52                       2    0.00254
+#>  9 q52                       3    0.00643
+#> 10 q52                       4    0.00827
+#> 11 theta                    NA   -0.0907
 ```
 
 ``` r

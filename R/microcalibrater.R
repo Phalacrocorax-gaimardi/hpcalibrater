@@ -1,18 +1,13 @@
-#hp_survey_oo <- read_csv("~/Policy/SurveyDataAndAnalysis/Analysis/Preferences/HP/hp_survey_oo.csv")
+#hp_survey_oo_calibrate <- read_csv("~/Policy/SurveyDataAndAnalysis/Analysis/Preferences/HP/hp_survey_oo_calibrate.csv")
 #hp_survey <- read_csv("~/Policy/SurveyDataAndAnalysis/Analysis/Preferences/HP/hp_survey.csv")
 #bill_values <- read_csv("~/Policy/SurveyDataAndAnalysis/Analysis/Preferences/HP/heating_bill_values.csv")
-#hp_qanda <- read_csv("~/Policy/SurveyDataAndAnalysis/Analysis/Preferences/HP/hp_qanda.csv")
-#hp_questions <- hp_qanda[,1:2] %>% distinct()
-
-#remove household profile
-#pv_survey1 <- pv_survey1 %>% dplyr::select(-qi)
-
-#dim(pv_survey_oo)
+#hp_questions_calibrate <- read_csv("~/Policy/SurveyDataAndAnalysis/Analysis/Preferences/HP/hp_questions_calibrate.csv")
+#hp_qanda_calibrate <- qanda %>% filter(question_code %in% hp_questions_calibrate$question_code)
 
 
 #' recode_bill
 #'
-#' converts to annual bill feature (q_ab), dropping min and max bills (q14 & q15)
+#' reduces the number of heating bill categories
 #'
 #' @param hp_data_in input survey data
 #' @param n_bill number of heating bill categories
@@ -36,10 +31,49 @@ recode_bill <- function(hp_data_in,n_bill){
   hp_data_in0 %>% dplyr::bind_cols(hp_data_in1) %>% return()
 }
 
+
+recode_eduation <- function(n){
+
+  qanda %>% filter(question_code == "qf")
+  n_new <- case_when( n %in% c(1:4,9)~1, !(n %in% c(1:4,9))~n-3)
+  return(n_new)
+}
+
+recode_income <- function(n, n_income=3){
+
+  if(n_income==5) n_new <- dplyr::case_when( n %in% c(1:2)~1, n %in% 3:4~2, n %in% 5:6~3, n %in% 7:8~4, n %in% 9:11~5, n==12~6)
+  if(n_income==3) n_new <- dplyr::case_when( n %in% c(1:3)~1, n %in% 4:6~2, n %in% 7:11~3, n==12~4)
+  return(n_new)
+}
+
+recode_qanda <- function(){
+
+  qanda_recode <- qanda %>% filter(!(question_code %in% c("qh","qf")))
+  #education
+  qanda_qf <- qanda %>% filter(question_code == "qf") %>% mutate(response_code=recode_eduation(response_code))
+  qanda_qf <- qanda_qf %>% mutate(response = ifelse(response_code==1,"Higher Secondary (Leaving Certificate / A-levels)",response))
+  qanda_qf <- qanda_qf %>% distinct()
+  #income
+  qanda_qh <- qanda %>% filter(question_code == "qh") %>% mutate(response_code=recode_income(response_code))
+  qanda_qh <- qanda_qh %>% mutate(response = case_when(response_code==1~"Less than 36,000",
+                                                       response_code==2~"26,000- 42,999",
+                                                       response_code==3~ "43,000- 68,999",
+                                                       response_code==4~ "69,000- 104,999",
+                                                       response_code==5~ "More than 105,000",
+                                                       response_code==6~"Prefer not to say"))
+  qanda_qh <- qanda_qh %>% distinct()
+
+  qanda_qh <- qanda_qh %>% distinct()
+
+  qanda_recode %>% bind_rows(qanda_qh,qanda_qf) %>% return()
+
+}
+
+
 #' feature_select
 #'
-#' feature_select does a further feature selection from hp_survey_oo or hp_survey before passing to xgb. Features removed include
-#' serial and social grade.
+#' feature_select does a further feature selection from hp_survey_oo_calibrate before passing to xgb. Features removed include
+#' serial and social grade.Optionally, it also creates new features such as an interaction between heating bill and income
 #'
 #' For example
 #' selected features from hp survey dataset before calibration
@@ -48,29 +82,33 @@ recode_bill <- function(hp_data_in,n_bill){
 #' @param hp_data_in hp_survey_oo or hp_survey
 #' @param recode_bills if true an annual bill feature q_ab is introduced with values
 #' @param n_bill number of bill categories
+#' @param recode_income if true recode income
 #'
 #' @returns reduced survey dataframe
 #' @export
 #'
 #' @examples
-feature_select <- function(hp_data_in, recode_bills=F, n_bill=NULL){
+feature_select <- function(hp_data_in, recode_bills=F, n_bill=NULL,recode_income=T){
 
   #pv_data_out <- pv_data_in %>% dplyr::filter(q262 != 1) #remove current adopters
-  hp_data_out <- hp_data_in %>% dplyr::select(-serial) #remove serial
+  #hp_data_out <- hp_data_in %>% dplyr::select(-serial) #remove serial
+  #hp_data_out <- hp_data_in %>% dplyr::select(-qc1)
   #remove social grade and tariff questions
   #pv_data_out <- pv_data_out %>% dplyr::select(-qd,-q40,-q41,-q43,-q44) #remove social grade, tariff questions
   #remove additional enviro questions
-  hp_data_out <- hp_data_out %>% dplyr::select(-q30_4,-q30_5)
+  #hp_data_out <- hp_data_out %>% dplyr::select(-q30_4,-q30_5)
   #remove operating time questions
-  hp_data_out <- hp_data_out %>% dplyr::select(-q20,-q22)
+  #hp_data_out <- hp_data_out %>% dplyr::select(-q20,-q22)
   #future fuel source preference
-  hp_data_out <- hp_data_out %>% dplyr::select(-q23)
+  #hp_data_out <- hp_data_out %>% dplyr::select(-q23)
   #remove secondary heating source
-  hp_data_out <- hp_data_out %>% dplyr::select(-q128,-q129)
+  #hp_data_out <- hp_data_out %>% dplyr::select(-q128,-q129)
   #perception of cost
-  hp_data_out <- hp_data_out %>% dplyr::select(-q24)
+  #hp_data_out <- hp_data_out %>% dplyr::select(-q24)
   #recode bills
+  hp_data_out <- hp_data_in
   if(recode_bills) hp_data_out <- recode_bill(hp_data_out, n_bill)
+  if(recode_income) hp_data_out <- hp_data_out %>% dplyr::mutate(qh=recode_income(qh))
   hp_data_out %>% return()
 
 }
@@ -115,7 +153,9 @@ transform_to_utils <-function(hp_data_in,s=0.15,epsilon=0.7){
 #' @examples
 find_optimum_rounds_from_crossvalidation <- function(hp_data_in, learning_rate=0.02, tree_depth=5, k_crossvalidation=5){
 
-  #pv_data1 <- pv_data %>% dplyr::select(-ID)
+  if("ID" %in% names(hp_data_in)) hp_data_in <- hp_data_in %>% dplyr::select(-ID)
+  if("serial" %in% names(hp_data_in)) hp_data_in <- hp_data_in %>% dplyr::select(-serial)
+  if("HH" %in% names(hp_data_in)) hp_data_in <- hp_data_in %>% dplyr::select(-HH)
   #pv.train <- xgboost::xgb.DMatrix(as.matrix(pv_util[,-dim(pv_util)[2]]),label=as.vector(pv_util$u), missing=NA)
   hp_train <- suppressWarnings(xgboost::xgb.DMatrix(as.matrix(hp_data_in %>% dplyr::select(-u)),label=as.vector(hp_data_in$u), missing=NA))
 
@@ -163,7 +203,9 @@ find_optimum_rounds_from_crossvalidation <- function(hp_data_in, learning_rate=0
 #'
 get_boosted_tree_model <- function(hp_data_in, learning_rate=0.02, tree_depth=5, k_crossvalidation=5,complexity_factor = 1){
 
-  #if("ID" %in% names(pv_data_in)) pv_data_in <- pv_data_in %>% dplyr::select(-ID)
+  if("ID" %in% names(hp_data_in)) hp_data_in <- hp_data_in %>% dplyr::select(-ID)
+  if("serial" %in% names(hp_data_in)) hp_data_in <- hp_data_in %>% dplyr::select(-serial)
+  if("HH" %in% names(hp_data_in)) hp_data_in <- hp_data_in %>% dplyr::select(-HH)
   #pv_util <- transform_to_utils(pv_data_in,s,epsilon)
   hp_train <- suppressWarnings(xgboost::xgb.DMatrix(as.matrix(hp_data_in %>% dplyr::select(-u)),label=as.vector(hp_data_in$u), missing=NA))
 
@@ -188,7 +230,7 @@ get_boosted_tree_model <- function(hp_data_in, learning_rate=0.02, tree_depth=5,
 }
 
 
-#bst <- get_boosted_tree_model(transform_to_utils(feature_select(hp_survey_oo,recode_bills=T,n_bill=5),epsilon=0.7))
+#bst <- get_boosted_tree_model(transform_to_utils(feature_select(hp_survey_oo_calibrate,recode_bills=T,n_bill=5),epsilon=0.7))
 
 #' get_shap_scores
 #'
@@ -202,18 +244,18 @@ get_boosted_tree_model <- function(hp_data_in, learning_rate=0.02, tree_depth=5,
 get_shap_scores <- function(hp_data_in,bst){
 
   hp_data_long <- hp_data_in
-  hp_data_long$ID <- 1:dim(hp_data_in)[1]
-  hp_data_long <- hp_data_long %>% tidyr::pivot_longer(-ID,names_to="question_code",values_to="response_code")
-  hp_data_long <- hp_data_long %>% dplyr::left_join(hp_qanda,by=c("question_code","response_code"))
+  #hp_data_long$ID <- 1:dim(hp_data_in)[1]
+  hp_data_long <- hp_data_long %>% tidyr::pivot_longer(-serial,names_to="question_code",values_to="response_code")
+  hp_data_long <- hp_data_long %>% dplyr::left_join(hp_qanda_calibrate,by=c("question_code","response_code"))
 
-  shap_scores <- predict(bst, as.matrix(hp_data_in %>% dplyr::select(-u)), predcontrib = TRUE, approxcontrib = F) %>% tibble::as_tibble()
-  shap_scores$ID <- 1:dim(shap_scores)[1]
-  shap_scores_long <- tidyr::pivot_longer(shap_scores,-ID,values_to="shap","names_to"="question_code")
+  shap_scores <- predict(bst, as.matrix(hp_data_in %>% dplyr::select(-u,-serial)), predcontrib = TRUE, approxcontrib = F) %>% tibble::as_tibble()
+  shap_scores$serial <- hp_data_in$serial
+  shap_scores_long <- tidyr::pivot_longer(shap_scores,-serial,values_to="shap","names_to"="question_code")
   #add predictions
-  preds <- shap_scores_long %>% dplyr::group_by(ID) %>% dplyr::summarise(u_predicted=sum(shap)) #includes BIAS
+  preds <- shap_scores_long %>% dplyr::group_by(serial) %>% dplyr::summarise(u_predicted=sum(shap)) #includes BIAS
   #preds$actual <- pv_data$qsp22_7
-  shap_scores_long1 <- shap_scores_long  %>% dplyr::inner_join(preds,by="ID")
-  shap_scores_long1$u_actual <- sapply(hp_data_in$u, rep, dim(hp_data_in)[2]) %>% as.vector()
+  shap_scores_long1 <- shap_scores_long  %>% dplyr::inner_join(preds,by="serial")
+  shap_scores_long1$u_actual <- sapply(hp_data_in$u, rep, dim(hp_data_in)[2]-1) %>% as.vector()
   #shap_scores_long1$pred <- shap_scores_long1$pred + 1 #+ dplyr::filter(shap_scores,name=="BIAS")$value
   #pv_data1$ID <- 1:dim(pv_data1)[1]
   #shap_scores_long1 <- shap_scores_long1 %>% dplyr::inner_join(pv_data1)
@@ -221,7 +263,7 @@ get_shap_scores <- function(hp_data_in,bst){
   return(shap_scores_long1)
 }
 
-#shap_scores_long <- get_shap_scores(transform_to_utils(feature_select(hp_survey_oo,recode_bills=T,n_bill=5),epsilon=0.7),bst)
+#shap_scores_long <- get_shap_scores(transform_to_utils(feature_select(hp_survey_oo_calibrate,recode_bills=T,n_bill=5),epsilon=0.7),bst)
 
 
 #' get_abm_calibration
@@ -242,19 +284,20 @@ get_shap_scores <- function(hp_data_in,bst){
 get_abm_calibration <- function(shap_scores_long, stat="mean",regularisation=1){
   #
   shap_scores <- shap_scores_long %>% dplyr::select(-question,-response)
-  #q45 social
+  #q52 social
   #q1,q2,q3,q5,q10,q14,q15 financial and roof constraint
   social_code <- "q52"
   #finance_codes <- c("q_ab")
   finance_codes <- "q13"
-  u_theta <- shap_scores %>% dplyr::filter(!(question_code %in% c(finance_codes,social_code))) %>% dplyr::group_by(ID) %>% dplyr::summarise(shap=sum(shap))
+  #if(energy_burden) finance_codes <- c("q13","burden")
+  u_theta <- shap_scores %>% dplyr::filter(!(question_code %in% c(finance_codes,social_code))) %>% dplyr::group_by(serial) %>% dplyr::summarise(shap=sum(shap))
   u_theta$question_code <- "theta"
   u_theta$response_code <- NA
 
   shap_scores_abm <- shap_scores %>% dplyr::filter(question_code %in% c(finance_codes,social_code)) %>% dplyr::select(-u_predicted,-u_actual)
   #shap_scores_abm <- shap_scores %>% dplyr::filter(question_code %in% c(finance_codes,social_code)) %>% dplyr::select(-u_actual,-shap)
 
-  shap_scores_abm <- shap_scores_abm %>% dplyr::bind_rows(u_theta) %>% dplyr::arrange(ID)
+  shap_scores_abm <- shap_scores_abm %>% dplyr::bind_rows(u_theta) #%>% dplyr::arrange(ID)
   shap_scores_abm <- shap_scores_abm %>% dplyr::rename("du"=shap)
   #regularise
   #regularise
@@ -263,8 +306,6 @@ get_abm_calibration <- function(shap_scores_long, stat="mean",regularisation=1){
   min_shap <- min_shap %>% dplyr::bind_rows(tidyr::tibble(question_code="theta",du_min = -theta_shift))
 
   shap_scores_abm <- shap_scores_abm %>% dplyr::inner_join(min_shap) %>% dplyr::mutate(du=du-regularisation*du_min) %>% dplyr::select(-du_min)
-
-
 
   if(stat=="mean") {shap_scores_mean <- shap_scores_abm %>% dplyr::group_by(question_code,response_code) %>% dplyr::summarise(du_average=mean(du))
   shap_scores_abm <- shap_scores_abm %>% dplyr::inner_join(shap_scores_mean)}

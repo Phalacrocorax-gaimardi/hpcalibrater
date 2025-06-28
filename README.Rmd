@@ -36,19 +36,19 @@ Survey data for 804 owner-occupiers with 39 features plus HH ID and stated likel
 library(hpcalibrater)
 library(tidyverse)
 ## basic example code
-hp_survey_oo %>% dim()
+hp_survey_oo_calibrate %>% dim()
 ```
 
 Survey questions and answers are in:
 ```{r qanda,message=FALSE}
-hp_questions %>% head()
+hp_questions_calibrate %>% head()
 ```
 
 
-Futher feature selection before passing to xgboost for model micro-calibration
+The dataset hp_survey_oo Further feature selection before passing to xgboost for model micro-calibration
 ```{r help}
 ## basic example code
-feature_select(hp_survey_oo) %>% dim()
+feature_select(hp_survey_oo_calibrate) %>% dim()
 ```
 
 ### Run GBM
@@ -56,8 +56,8 @@ feature_select(hp_survey_oo) %>% dim()
 The function `hpcalibrater::get_boosted_tree_model` generated a boosted tree object using XGBoost. SHAP scores are extracted from this object using `hpcalibrater::get_shap_scores`.
 
 ```{r bst, results='hide', message=FALSE}
-bst <- get_boosted_tree_model(transform_to_utils(feature_select(hp_survey_oo,recode_bills=T,n_bill=5),epsilon=0.7))
-shap_scores_long <- get_shap_scores(transform_to_utils(feature_select(hp_survey_oo,recode_bills=T,n_bill=5),epsilon=0.7),bst)
+bst <- get_boosted_tree_model(transform_to_utils(feature_select(hp_survey_oo_calibrate,recode_bills=T,n_bill=5),epsilon=0.7))
+shap_scores_long <- get_shap_scores(transform_to_utils(feature_select(hp_survey_oo_calibrate,recode_bills=T,n_bill=5),epsilon=0.7),bst)
 
 ```
 

@@ -1,6 +1,6 @@
 Package: hpcalibrater
 Title: Agent Based Model Calibration Model For Heat Pump + retrofit Adoption By Irish Households
-Version: 0.0.1.1
+Version: 0.0.1.2
 Authors@R: person("Joseph", "Wheatley", email = "joe.wheatley@ucd.ie", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0001-5932-1683"))
 Description: This package extracts a microcalibrated agent based model for household heat pump amd/or retrofit adoption in Ireland, based on stated likelihood to adopt survey data (2024). This is an additive model consisting of non-linear financial and social interaction terms along with a barrier-to-adoption term. The calibration is based tree-based gradient-boosting algorithm (XGboost) is used with Shapley scores.
